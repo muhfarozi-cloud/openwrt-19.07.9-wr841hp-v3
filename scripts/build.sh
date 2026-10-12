@@ -44,7 +44,7 @@ make defconfig
 cat >> .config <<'CONFIG_EOF'
 CONFIG_TARGET_ath79=y
 CONFIG_TARGET_ath79_generic=y
-CONFIG_TARGET_PROFILE="DEVICE_tplink_tl-wr841hp-v3"
+CONFIG_TARGET_ath79_generic_DEVICE_tplink_tl-wr841hp-v3=y
 
 # Minimal LuCI
 CONFIG_PACKAGE_luci-base=y
@@ -90,6 +90,7 @@ make defconfig
 grep -q '^CONFIG_PACKAGE_opennds=y' .config || fail "opennds is unavailable or not selected."
 grep -q '^CONFIG_PACKAGE_wpad-mini=y' .config || fail "wpad-mini is not selected."
 grep -q '^CONFIG_TARGET_ath79_generic=y' .config || fail "ath79/generic target not selected."
+grep -q '^CONFIG_TARGET_ath79_generic_DEVICE_tplink_tl-wr841hp-v3=y' .config || fail "TL-WR841HP v3 device profile not selected."
 
 mkdir -p files/etc/uci-defaults
 cp "${ROOT_DIR}"/files/etc/uci-defaults/* files/etc/uci-defaults/
