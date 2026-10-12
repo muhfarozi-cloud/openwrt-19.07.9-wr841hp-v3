@@ -44,7 +44,7 @@ new file mode 100644
 index 0000000..7170601f6a
 --- /dev/null
 +++ b/target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts
-@@ -0,0 +1,146 @@ -0,0 +1,146 @@
+@@ -0,0 +1,146 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 +
 +#include "qca953x.dtsi"
