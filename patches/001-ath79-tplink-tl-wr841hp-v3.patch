@@ -208,8 +208,3 @@ index 0000000..0000000 100644
 +endef
 +TARGET_DEVICES += tplink_tl-wr841hp-v3
 +
- define Device/tplink_tl-wr710n-v1
-   $(Device/tplink-8mlzma)
-   ATH_SOC := ar9331
---
-2.39.2
