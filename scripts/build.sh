@@ -19,16 +19,75 @@ echo "== Clone OpenWrt ${OPENWRT_TAG}"
 git clone --depth 1 --branch "${OPENWRT_TAG}" https://git.openwrt.org/openwrt/openwrt.git "${SRC_DIR}"
 cd "${SRC_DIR}"
 
-echo "== Apply backport patches"
-shopt -s nullglob
-patches=("${ROOT_DIR}"/patches/*.patch)
-if (("${#patches[@]}" == 0)); then
-  fail "WR841HP v3 backport patch missing in patches/*.patch. Build stopped to avoid creating an unsupported image."
-fi
-for p in "${patches[@]}"; do
-  echo "-- Applying $(basename "$p")"
-  patch -p1 --forward --batch < "$p" || fail "Patch failed: $p"
-done
+echo "== Apply deterministic TL-WR841HP v3 backport"
+python3 - <<'PY'
+from pathlib import Path
+
+root = Path.cwd()
+leds = root / "target/linux/ath79/base-files/etc/board.d/01_leds"
+network = root / "target/linux/ath79/base-files/etc/board.d/02_network"
+image = root / "target/linux/ath79/image/generic-tp-link.mk"
+dts_src = Path("${ROOT_DIR}/patches/qca9533_tplink_tl-wr841hp-v3.dts")
+dts_dst = root / "target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts"
+
+def insert_once(path, marker, addition, label):
+    text = path.read_text()
+    if addition.strip() in text:
+        print(f"{label}: already present")
+        return
+    if marker not in text:
+        raise SystemExit(f"Required anchor not found in {path}: {marker!r}")
+    path.write_text(text.replace(marker, addition + marker, 1))
+    print(f"{label}: added")
+
+text = leds.read_text()
+led_case = '''tplink,tl-wr841hp-v3)
+\tucidef_set_led_switch "lan" "LAN" "green:lan" "switch0" "0x1E"
+\tucidef_set_led_netdev "wan" "WAN" "green:wan" "eth1"
+\t;;
+'''
+if "tplink,tl-wr841hp-v3)" not in text:
+    pos = text.rfind("\nesac")
+    if pos < 0:
+        raise SystemExit("Final esac anchor not found in 01_leds")
+    leds.write_text(text[:pos+1] + led_case + text[pos+1:])
+    print("01_leds: added")
+else:
+    print("01_leds: already present")
+
+insert_once(network, "\ttplink,tl-wr841-v12|\\\n",
+            "\ttplink,tl-wr841hp-v3|\\\n", "02_network")
+insert_once(image, "TARGET_DEVICES += tplink_tl-wr810n-v2\n",
+            """\ndefine Device/tplink_tl-wr841hp-v3
+  $(Device/tplink-8mlzma)
+  ATH_SOC := qca9533
+  DEVICE_TITLE := TP-Link TL-WR841HP v3
+  TPLINK_HWID := 0x08411003
+endef
+TARGET_DEVICES += tplink_tl-wr841hp-v3
+""", "image recipe")
+
+if not dts_src.is_file():
+    raise SystemExit(f"Missing DTS source: {dts_src}")
+dts_dst.parent.mkdir(parents=True, exist_ok=True)
+if dts_dst.exists():
+    if dts_dst.read_bytes() != dts_src.read_bytes():
+        raise SystemExit("DTS already exists but differs from repository copy")
+    print("DTS: already present")
+else:
+    dts_dst.write_bytes(dts_src.read_bytes())
+    print("DTS: copied")
+
+for path, token in [
+    (leds, "tplink,tl-wr841hp-v3)"),
+    (network, "tplink,tl-wr841hp-v3|"),
+    (image, "TARGET_DEVICES += tplink_tl-wr841hp-v3"),
+    (dts_dst, 'compatible = "tplink,tl-wr841hp-v3"'),
+]:
+    if token not in path.read_text():
+        raise SystemExit(f"Backport verification failed: {token} missing in {path}")
+print("Backport verification passed")
+PY
 
 echo "== Verify device profile exists"
 grep -Rqs --include='*.mk' --include='*.in' "${DEVICE_PROFILE}" target/linux/ath79 ||
