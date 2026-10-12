@@ -6,11 +6,11 @@ Backport device support from upstream commit c5235f6b2441a6b531622b76b66c354896c
 The board.d paths and image recipe are adapted to the OpenWrt 19.07.9 tree.
 
 ---
- target/linux/ath79/base-files/etc/board.d/01_leds  |   3 +-
+ target/linux/ath79/base-files/etc/board.d/01_leds  |   4 +
  target/linux/ath79/base-files/etc/board.d/02_network |   1 +
  target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts | 146 +++++++++++++++++++++
  target/linux/ath79/image/generic-tp-link.mk |   8 +
- 4 files changed, 157 insertions(+), 1 deletion(-)
+ 4 files changed, 159 insertions(+)
  create mode 100644 target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts
 
 diff --git a/target/linux/ath79/base-files/etc/board.d/01_leds b/target/linux/ath79/base-files/etc/board.d/01_leds
