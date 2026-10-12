@@ -1,0 +1,213 @@
+From c5235f6b2441a6b531622b76b66c354896c0dae0 Mon Sep 17 00:00:00 2001
+From: OpenWrt backport
+Subject: [PATCH] ath79: add TP-Link TL-WR841HP v3 support to 19.07.9
+
+Backport device support from upstream commit c5235f6b2441a6b531622b76b66c354896c0dae0.
+The board.d paths and image recipe are adapted to the OpenWrt 19.07.9 tree.
+
+---
+ target/linux/ath79/base-files/etc/board.d/01_leds  |   3 +-
+ target/linux/ath79/base-files/etc/board.d/02_network |   1 +
+ target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts | 146 +++++++++++++++++++++
+ target/linux/ath79/image/generic-tp-link.mk |   8 +
+ 4 files changed, 157 insertions(+), 1 deletion(-)
+ create mode 100644 target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts
+
+diff --git a/target/linux/ath79/base-files/etc/board.d/01_leds b/target/linux/ath79/base-files/etc/board.d/01_leds
+index 0000000..0000000 100644
+--- a/target/linux/ath79/base-files/etc/board.d/01_leds
++++ b/target/linux/ath79/base-files/etc/board.d/01_leds
+@@
+ tplink,archer-c59-v1|\
+ tplink,archer-c60-v1|\
+ tplink,archer-c60-v2|\
+-tplink,archer-c60-v3)
++tplink,archer-c60-v3|\
++tplink,tl-wr841hp-v3)
+ 	ucidef_set_led_switch "lan" "LAN" "tp-link:green:lan" "switch0" "0x1E"
+ 	ucidef_set_led_netdev "wan" "WAN" "tp-link:green:wan" "eth1"
+ 	;;
+diff --git a/target/linux/ath79/base-files/etc/board.d/02_network b/target/linux/ath79/base-files/etc/board.d/02_network
+index 0000000..0000000 100644
+--- a/target/linux/ath79/base-files/etc/board.d/02_network
++++ b/target/linux/ath79/base-files/etc/board.d/02_network
+@@
+ 	tplink,tl-wr841-v10|\
+ 	tplink,tl-wr841-v11|\
+ 	tplink,tl-wr841-v12|\
++	tplink,tl-wr841hp-v3|\
+ 	tplink,tl-wr842n-v1|\
+ 	tplink,tl-wr842n-v3|\
+ 	tplink,tl-wr940n-v3|\
+diff --git a/target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts b/target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts
+new file mode 100644
+index 0000000..7170601f6a
+--- /dev/null
++++ b/target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts
+@@ -0,0 +1,146 @@
++// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
++
++#include "qca953x.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++
++/ {
++	compatible = "tplink,tl-wr841hp-v3", "qca,qca9533";
++	model = "TP-Link TL-WR841HP v3";
++
++	aliases {
++		label-mac-device = &wmac;
++		led-boot = &led_power;
++		led-failsafe = &led_power;
++		led-running = &led_power;
++		led-upgrade = &led_power;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		wifi {
++			label = "green:wifi";
++			gpios = <&gpio 15 GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "phy0tpt";
++		};
++
++		led_power: power {
++			label = "green:power";
++			gpios = <&gpio 16 GPIO_ACTIVE_LOW>;
++			default-state = "on";
++		};
++
++		wan_green {
++			label = "green:wan";
++			gpios = <&gpio 12 GPIO_ACTIVE_LOW>;
++		};
++
++		wan_amber {
++			label = "amber:wan";
++			gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
++		};
++
++		lan {
++			label = "green:lan";
++			gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
++		};
++
++		wps {
++			label = "green:wps";
++			gpios = <&gpio 4 GPIO_ACTIVE_LOW>;
++		};
++
++		re {
++			label = "green:re";
++			gpios = <&gpio 13 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	keys {
++		compatible = "gpio-keys";
++
++		reset {
++			label = "Reset button";
++			linux,code = <KEY_RESTART>;
++			gpios = <&gpio 1 GPIO_ACTIVE_LOW>;
++			debounce-interval = <60>;
++		};
++
++		wifi {
++			label = "WiFi button";
++			linux,code = <KEY_RFKILL>;
++			gpios = <&gpio 0 GPIO_ACTIVE_LOW>;
++			debounce-interval = <60>;
++		};
++
++		wps {
++			label = "WPS button";
++			linux,code = <KEY_WPS_BUTTON>;
++			gpios = <&gpio 2 GPIO_ACTIVE_LOW>;
++			debounce-interval = <60>;
++		};
++
++		re {
++			label = "RE button";
++			linux,code = <BTN_0>;
++			gpios = <&gpio 17 GPIO_ACTIVE_LOW>;
++			debounce-interval = <60>;
++		};
++	};
++};
++
++&spi {
++	status = "okay";
++
++	flash@0 {
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <25000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			uboot: partition@0 {
++				label = "u-boot";
++				reg = <0x000000 0x020000>;
++				read-only;
++			};
++
++			partition@20000 {
++				compatible = "tplink,firmware";
++				label = "firmware";
++				reg = <0x020000 0x7d0000>;
++			};
++
++			art: partition@7f0000 {
++				label = "art";
++				reg = <0x7f0000 0x010000>;
++				read-only;
++			};
++		};
++	};
++};
++
++&eth0 {
++	status = "okay";
++
++	phy-handle = <&swphy4>;
++
++	mtd-mac-address = <&uboot 0x1fc00>;
++	mtd-mac-address-increment = <1>;
++};
++
++&eth1 {
++	mtd-mac-address = <&uboot 0x1fc00>;
++};
++
++&wmac {
++	status = "okay";
++
++	mtd-cal-data = <&art 0x1000>;
++	mtd-mac-address = <&uboot 0x1fc00>;
++};
+diff --git a/target/linux/ath79/image/generic-tp-link.mk b/target/linux/ath79/image/generic-tp-link.mk
+index 0000000..0000000 100644
+--- a/target/linux/ath79/image/generic-tp-link.mk
++++ b/target/linux/ath79/image/generic-tp-link.mk
+@@
+ TARGET_DEVICES += tplink_tl-wr810n-v2
+ 
++define Device/tplink_tl-wr841hp-v3
++  $(Device/tplink-8mlzma)
++  ATH_SOC := qca9533
++  DEVICE_TITLE := TP-Link TL-WR841HP v3
++  TPLINK_HWID := 0x08411003
++endef
++TARGET_DEVICES += tplink_tl-wr841hp-v3
++
+ define Device/tplink_tl-wr710n-v1
+   $(Device/tplink-8mlzma)
+   ATH_SOC := ar9331
+--
+2.39.2
