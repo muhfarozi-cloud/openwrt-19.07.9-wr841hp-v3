@@ -20,14 +20,15 @@ git clone --depth 1 --branch "${OPENWRT_TAG}" https://git.openwrt.org/openwrt/op
 cd "${SRC_DIR}"
 
 echo "== Apply deterministic TL-WR841HP v3 backport"
-python3 - <<'PY'
+DTS_SOURCE="${ROOT_DIR}/patches/qca9533_tplink_tl-wr841hp-v3.dts" python3 - <<'PY'
 from pathlib import Path
+import os
 
 root = Path.cwd()
 leds = root / "target/linux/ath79/base-files/etc/board.d/01_leds"
 network = root / "target/linux/ath79/base-files/etc/board.d/02_network"
 image = root / "target/linux/ath79/image/generic-tp-link.mk"
-dts_src = Path("${ROOT_DIR}/patches/qca9533_tplink_tl-wr841hp-v3.dts")
+dts_src = Path(os.environ["DTS_SOURCE"])
 dts_dst = root / "target/linux/ath79/dts/qca9533_tplink_tl-wr841hp-v3.dts"
 
 def insert_once(path, marker, addition, label):
