@@ -1,0 +1,10 @@
+#!/bin/sh
+# Enable the first detected wireless radio on first boot.
+[ -x /sbin/uci ] || exit 0
+RADIO="$(uci show wireless 2>/dev/null | sed -n 's/^\(wireless\.radio[0-9]\+\)=wifi-device$/\1/p' | head -n1)"
+if [ -n "$RADIO" ]; then
+    uci set "${RADIO}.disabled=0"
+    uci commit wireless
+    wifi up 2>/dev/null || true
+fi
+exit 0
